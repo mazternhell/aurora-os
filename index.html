@@ -18,6 +18,19 @@
   </header>
 
   <main class="shell">
+    <section class="card agent-card">
+      <div class="section-head">
+        <div>
+          <p class="label">AURORA PMO</p>
+          <h2>Executive Dashboard Manager</h2>
+        </div>
+        <span id="agentStatus" class="status-badge">Ready</span>
+      </div>
+      <p class="agent-description">Reviews the dashboard for focus, overload, blockers, and the clearest next action.</p>
+      <button id="runPmoBtn" class="button">Run PMO Review</button>
+      <div id="pmoReport" class="pmo-report" aria-live="polite"></div>
+    </section>
+
     <section class="card mission-card">
       <p class="label">TODAY'S MISSION</p>
       <h2 id="mission" contenteditable="true" aria-label="Today's mission">Launch Aurora ForgeWorks</h2>
@@ -58,8 +71,8 @@
         <ul id="blockers" class="blocker-list"></ul>
       </article>
       <article class="card recommendation-card">
-        <p class="label">SAM'S RECOMMENDATION</p>
-        <textarea id="recommendation" rows="8" aria-label="Sam's recommendation"></textarea>
+        <p class="label">PMO RECOMMENDATION</p>
+        <textarea id="recommendation" rows="8" aria-label="PMO recommendation"></textarea>
       </article>
     </section>
 
@@ -75,7 +88,7 @@
     </section>
   </main>
 
-  <footer>Aurora OS v0.1 · Data is saved locally on this device.</footer>
+  <footer>Aurora OS v0.2 · Data is saved locally on this device.</footer>
   <script src="app.js"></script>
 </body>
 </html>

@@ -9,6 +9,7 @@
   --accent: #7dd3fc;
   --accent-strong: #38bdf8;
   --success: #86efac;
+  --warning: #fde68a;
   --danger: #fda4af;
   --radius: 18px;
   --shadow: 0 16px 40px rgba(0,0,0,.24);
@@ -38,6 +39,17 @@ h3 { font-size: 1rem; }
 .button { border: 0; border-radius: 12px; padding: 10px 14px; background: var(--accent-strong); color: #03131b; font-weight: 800; }
 .button:hover { filter: brightness(1.08); }
 .button.secondary { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+
+.agent-card { border-color: rgba(125,211,252,.5); }
+.agent-description { margin: -4px 0 16px; color: var(--muted); line-height: 1.5; }
+.status-badge { display: inline-flex; align-items: center; min-height: 30px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); font-size: .78rem; font-weight: 800; }
+.status-badge.attention { color: var(--warning); border-color: rgba(253,230,138,.4); }
+.status-badge.clear { color: var(--success); border-color: rgba(134,239,172,.4); }
+.pmo-report { display: none; margin-top: 16px; padding: 14px; border-radius: 12px; background: rgba(4,8,15,.55); border: 1px solid var(--border); line-height: 1.5; }
+.pmo-report.visible { display: block; }
+.pmo-report strong { color: var(--accent); }
+.pmo-report ul { margin: 10px 0 0; padding-left: 20px; }
+.pmo-report li + li { margin-top: 7px; }
 
 textarea { width: 100%; resize: vertical; border: 1px solid var(--border); border-radius: 12px; background: rgba(4,8,15,.55); color: var(--text); padding: 13px; line-height: 1.5; outline: none; }
 textarea:focus { border-color: var(--accent-strong); }
@@ -71,6 +83,7 @@ footer { padding: 0 20px 28px; color: var(--muted); text-align: center; font-siz
   .milestone { grid-template-columns: 1fr auto; }
   .milestone time { grid-column: 1 / -1; }
   .button { min-height: 42px; }
+  .agent-card .button { width: 100%; }
 }
 
 @media (max-width: 420px) {

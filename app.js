@@ -1,27 +1,34 @@
+const PROFITABILITY_MILESTONE = {
+  date: "2026-07-17",
+  text: "Aurora OS AI backend deployed successfully on Cloudflare Workers AI using GLM 4.7 Flash"
+};
+
 const defaults = {
-  mission: "Get the Plasma CNC producing saleable products as quickly as possible.",
+  mission: "Make Aurora ForgeWorks profitable by getting the Plasma CNC producing saleable products consistently.",
   priorities: [
-    { text: "Rebuild the simple THC controller", done: false },
-    { text: "Perform a plasma test cut and record voltage versus height", done: false },
-    { text: "Register Aurora ForgeWorks with DTI", done: false }
+    { text: "Finish the simple THC controller", done: false },
+    { text: "Run controlled plasma test cuts and record voltage versus height", done: false },
+    { text: "Complete a repeatable saleable test cut", done: false }
   ],
-  roiTask: "Restore dependable plasma cut quality so production can begin.",
-  nextMilestone: "Complete a repeatable saleable test cut.",
+  roiTask: "Restore dependable plasma cut quality so production and sales can begin.",
+  nextMilestone: "Complete and document one repeatable saleable plasma cut.",
   blockers: [
     "Plasma cut quality is not yet dependable",
     "Actual arc-voltage-to-height relationship is not yet measured"
   ],
-  recommendation: "Keep the scope narrow: finish the THC, run controlled test cuts, record results, and use the evidence to choose the next adjustment.",
+  recommendation: "Aurora OS is intentionally paused. Keep the scope narrow: finish the THC, run controlled test cuts, record the evidence, and achieve the first repeatable saleable cut. Revenue from production will fund future R&D.",
   milestones: [
     { date: "2026-07-16", text: "Aurora OS repository and GitHub access established" },
-    { date: "2026-07-16", text: "Executive dashboard selected as the first Aurora OS deliverable" }
+    { date: "2026-07-16", text: "Executive dashboard selected as the first Aurora OS deliverable" },
+    PROFITABILITY_MILESTONE
   ],
   lastPmoReview: null,
   samEndpoint: "",
-  samToken: ""
+  samToken: "",
+  strategyVersion: 1
 };
 
-const key = "aurora-dashboard-v03";
+const key = "aurora-dashboard-v04";
 let state = load();
 
 const $ = (selector) => document.querySelector(selector);
@@ -41,12 +48,40 @@ const askSamBtn = $("#askSamBtn");
 
 function load() {
   try {
-    const previous = JSON.parse(localStorage.getItem("aurora-dashboard-v02")) || {};
+    const v02 = JSON.parse(localStorage.getItem("aurora-dashboard-v02")) || {};
+    const v03 = JSON.parse(localStorage.getItem("aurora-dashboard-v03")) || {};
     const current = JSON.parse(localStorage.getItem(key)) || {};
-    return { ...structuredClone(defaults), ...previous, ...current };
+    const loaded = { ...structuredClone(defaults), ...v02, ...v03, ...current };
+
+    if (loaded.strategyVersion !== defaults.strategyVersion) {
+      return applyProfitabilityStrategy(loaded);
+    }
+
+    return loaded;
   } catch {
     return structuredClone(defaults);
   }
+}
+
+function applyProfitabilityStrategy(previous) {
+  const updated = {
+    ...previous,
+    mission: defaults.mission,
+    priorities: structuredClone(defaults.priorities),
+    roiTask: defaults.roiTask,
+    nextMilestone: defaults.nextMilestone,
+    blockers: structuredClone(defaults.blockers),
+    recommendation: defaults.recommendation,
+    strategyVersion: defaults.strategyVersion
+  };
+
+  const milestones = Array.isArray(previous.milestones) ? [...previous.milestones] : [];
+  const alreadyLogged = milestones.some((item) => item?.date === PROFITABILITY_MILESTONE.date && item?.text === PROFITABILITY_MILESTONE.text);
+  if (!alreadyLogged) milestones.push(PROFITABILITY_MILESTONE);
+  updated.milestones = milestones;
+
+  localStorage.setItem(key, JSON.stringify(updated));
+  return updated;
 }
 
 function save() {
@@ -251,7 +286,7 @@ $("#addMilestoneBtn").addEventListener("click", () => {
   state.milestones.push({ date: new Date().toISOString().slice(0, 10), text: "New milestone" }); save(); renderMilestones();
 });
 $("#resetBtn").addEventListener("click", () => {
-  if (!confirm("Reset the dashboard to its original data?")) return;
+  if (!confirm("Reset the dashboard to its current strategic baseline?")) return;
   const connection = { samEndpoint: state.samEndpoint, samToken: state.samToken };
   state = { ...structuredClone(defaults), ...connection };
   save();
@@ -259,4 +294,5 @@ $("#resetBtn").addEventListener("click", () => {
   render();
 });
 
+save();
 render();

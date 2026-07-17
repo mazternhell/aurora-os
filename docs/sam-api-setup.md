@@ -5,19 +5,23 @@ Aurora OS keeps the public dashboard on GitHub Pages and sends PMO review reques
 ## 1. Install Wrangler
 
 ```bash
-npm install -g wrangler
-wrangler login
+cd worker
+npm install
+npx wrangler login --use-keyring
 ```
+
+Wrangler is installed locally so every developer and CI run uses the project-pinned version.
 
 ## 2. Deploy the Worker
 
-From the repository root:
+From the `worker` directory, first verify the account and configuration:
 
 ```bash
-cd worker
-wrangler secret put OPENAI_API_KEY
-wrangler secret put DASHBOARD_TOKEN
-wrangler deploy
+npx wrangler whoami
+npm run deploy:dry-run
+npx wrangler secret put OPENAI_API_KEY
+npx wrangler secret put DASHBOARD_TOKEN
+npm run deploy
 ```
 
 Use a long, random value for `DASHBOARD_TOKEN`. This is separate from the OpenAI API key.
@@ -39,7 +43,7 @@ The connection details are stored only in that browser's local storage.
 
 ## 4. CORS setting
 
-`worker/wrangler.toml` currently permits requests from:
+`worker/wrangler.jsonc` currently permits requests from:
 
 ```text
 https://mazternhell.github.io

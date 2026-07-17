@@ -9,7 +9,12 @@ export async function runWorkersAIReview(ai, { model, instructions, input }) {
     temperature: 0.2,
     max_completion_tokens: 900
   });
-
+// added
+  console.log(
+    "Workers AI raw response:",
+    JSON.stringify(result, null, 2)
+  );
+//added
   const output = extractText(result);
   if (!output) {
     throw new Error("Workers AI returned no text");

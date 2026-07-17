@@ -1,3 +1,5 @@
+import { runWorkersAIReview } from "./ai/workers-ai.js";
+
 const SAM_INSTRUCTIONS = `You are Sam, the PMO and executive operating partner for Aurora ForgeWorks.
 
 Your purpose is to protect focus, maintain momentum, identify the critical path, surface blockers, and recommend the smallest next action that creates measurable business progress.
@@ -11,38 +13,16 @@ Guiding principles:
 6. Recommend changes, but do not make them without Nelson's approval.
 7. Be direct, practical, and concise.
 
-Return only the requested structured JSON.`;
+Return only valid JSON with exactly these fields:
+- status: one of focused, attention, needs_plan
+- summary: string
+- recommended_next_action: string
+- reasoning: string
+- suggested_priority_changes: array of up to 3 strings
+- blockers_to_escalate: array of up to 3 strings
+- milestone_to_record: string or null
 
-const RESPONSE_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    status: { type: "string", enum: ["focused", "attention", "needs_plan"] },
-    summary: { type: "string" },
-    recommended_next_action: { type: "string" },
-    reasoning: { type: "string" },
-    suggested_priority_changes: {
-      type: "array",
-      items: { type: "string" },
-      maxItems: 3
-    },
-    blockers_to_escalate: {
-      type: "array",
-      items: { type: "string" },
-      maxItems: 3
-    },
-    milestone_to_record: { type: ["string", "null"] }
-  },
-  required: [
-    "status",
-    "summary",
-    "recommended_next_action",
-    "reasoning",
-    "suggested_priority_changes",
-    "blockers_to_escalate",
-    "milestone_to_record"
-  ]
-};
+Do not wrap the JSON in Markdown fences.`;
 
 export default {
   async fetch(request, env) {
@@ -57,8 +37,8 @@ export default {
       return json({ error: "Method not allowed" }, 405, cors);
     }
 
-    if (!env.OPENAI_API_KEY || !env.DASHBOARD_TOKEN) {
-      return json({ error: "Worker secrets are not configured" }, 500, cors);
+    if (!env.AI || !env.DASHBOARD_TOKEN) {
+      return json({ error: "Worker bindings or secrets are not configured" }, 500, cors);
     }
 
     const auth = request.headers.get("Authorization");
@@ -82,55 +62,20 @@ export default {
       dashboard: body.dashboard
     });
 
-    const openAIResponse = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: env.OPENAI_MODEL || "gpt-5-mini",
-        instructions: SAM_INSTRUCTIONS,
-        input,
-        text: {
-          format: {
-            type: "json_schema",
-            name: "aurora_pmo_review",
-            strict: true,
-            schema: RESPONSE_SCHEMA
-          }
-        }
-      })
-    });
-
-    const responseBody = await openAIResponse.json();
-    if (!openAIResponse.ok) {
-      console.error("OpenAI error", responseBody);
-      return json({ error: "Sam could not complete the review" }, 502, cors);
-    }
-
-    const outputText = extractOutputText(responseBody);
-    if (!outputText) {
-      return json({ error: "Sam returned no structured response" }, 502, cors);
-    }
-
     try {
-      return json({ review: JSON.parse(outputText) }, 200, cors);
-    } catch {
-      return json({ error: "Sam returned invalid structured data" }, 502, cors);
+      const review = await runWorkersAIReview(env.AI, {
+        model: env.WORKERS_AI_MODEL,
+        instructions: SAM_INSTRUCTIONS,
+        input
+      });
+
+      return json({ review }, 200, cors);
+    } catch (error) {
+      console.error("Workers AI error", error);
+      return json({ error: "Sam could not complete the review" }, 502, cors);
     }
   }
 };
-
-function extractOutputText(response) {
-  if (typeof response.output_text === "string") return response.output_text;
-  for (const item of response.output || []) {
-    for (const content of item.content || []) {
-      if (content.type === "output_text" && typeof content.text === "string") return content.text;
-    }
-  }
-  return "";
-}
 
 function corsHeaders(origin, allowedOrigin) {
   const permitted = !allowedOrigin || allowedOrigin === "*" || origin === allowedOrigin;

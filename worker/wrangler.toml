@@ -1,7 +1,0 @@
-name = "aurora-sam-pmo"
-main = "src/index.js"
-compatibility_date = "2026-07-16"
-
-[vars]
-OPENAI_MODEL = "gpt-5-mini"
-ALLOWED_ORIGIN = "https://mazternhell.github.io"

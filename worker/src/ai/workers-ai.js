@@ -1,26 +1,58 @@
 const DEFAULT_MODEL = "@cf/zai-org/glm-4.7-flash";
+const MAX_COMPLETION_TOKENS = 2400;
+
+const OUTPUT_INSTRUCTIONS = `
+Return only one valid JSON object matching the requested schema.
+Do not include markdown fences, commentary, preambles, or analysis.
+Keep every field concise. Produce the final JSON immediately.
+`;
 
 export async function runWorkersAIReview(ai, { model, instructions, input }) {
   const result = await ai.run(model || DEFAULT_MODEL, {
     messages: [
-      { role: "system", content: instructions },
+      {
+        role: "system",
+        content: `${instructions.trim()}\n\n${OUTPUT_INSTRUCTIONS.trim()}`
+      },
       { role: "user", content: input }
     ],
     temperature: 0.2,
-    max_completion_tokens: 900
+    reasoning_effort: "low",
+    response_format: { type: "json_object" },
+    max_completion_tokens: MAX_COMPLETION_TOKENS
   });
-// added
+
   console.log(
-    "Workers AI raw response:",
-    JSON.stringify(result, null, 2)
+    "Workers AI response metadata:",
+    JSON.stringify({
+      model: result?.model,
+      finish_reason: result?.choices?.[0]?.finish_reason,
+      usage: result?.usage,
+      has_content: Boolean(result?.choices?.[0]?.message?.content)
+    })
   );
-//added
+
   const output = extractText(result);
   if (!output) {
-    throw new Error("Workers AI returned no text");
+    const choice = result?.choices?.[0];
+    if (choice?.finish_reason === "length") {
+      throw new Error(
+        `Workers AI reached the ${MAX_COMPLETION_TOKENS}-token completion limit before producing final JSON`
+      );
+    }
+
+    throw new Error(
+      `Workers AI returned no final text (finish_reason: ${choice?.finish_reason || "unknown"})`
+    );
   }
 
-  const review = JSON.parse(stripCodeFence(output));
+  let review;
+  try {
+    review = JSON.parse(stripCodeFence(output));
+  } catch (error) {
+    throw new Error(`Workers AI returned invalid JSON: ${error.message}`);
+  }
+
   validateReview(review);
   return review;
 }
@@ -70,12 +102,19 @@ function validateReview(review) {
   }
 
   for (const field of ["suggested_priority_changes", "blockers_to_escalate"]) {
-    if (!Array.isArray(review[field]) || review[field].length > 3 || review[field].some((item) => typeof item !== "string")) {
+    if (
+      !Array.isArray(review[field]) ||
+      review[field].length > 3 ||
+      review[field].some((item) => typeof item !== "string")
+    ) {
       throw new Error(`Invalid ${field}`);
     }
   }
 
-  if (review.milestone_to_record !== null && typeof review.milestone_to_record !== "string") {
+  if (
+    review.milestone_to_record !== null &&
+    typeof review.milestone_to_record !== "string"
+  ) {
     throw new Error("Invalid milestone_to_record");
   }
 }
